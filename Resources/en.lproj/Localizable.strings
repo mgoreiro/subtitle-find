@@ -1,0 +1,5 @@
+"about.menu" = "About Subtitle Find";
+"about.desc" = "Finds and downloads Spanish subtitles,\nregular and forced, for your videos.";
+"about.author" = "Author";
+"about.sources" = "Sources";
+"about.sources.list" = "OpenSubtitles.com · SubDL · IMDB (title lookup)";
