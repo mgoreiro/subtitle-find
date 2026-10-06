@@ -18,7 +18,7 @@ final class Library {
         let new = VideoScanner.collect(urls).filter { !known.contains($0) }
         if new.isEmpty {
             if items.isEmpty || urls.contains(where: { !known.contains($0) }) {
-                notice = "No he encontrado vídeos nuevos en lo que has soltado."
+                notice = L("notice.novideos")
             }
             return
         }
@@ -49,7 +49,7 @@ final class Library {
         guard !isRunning else { return }
         let providers = Self.makeProviders()
         guard !providers.isEmpty else {
-            notice = "Añade al menos una API key en Ajustes (⌘,)."
+            notice = L("notice.nokeys")
             return
         }
         isRunning = true
@@ -62,7 +62,7 @@ final class Library {
                     let msg = exhausted.values.first ?? ""
                     for it in items { for k in SubKind.allCases where it[k] == .pending { it[k] = .quota(msg) } }
                     let detail = msg.components(separatedBy: " ts=").first ?? msg
-                    notice = "Se ha agotado la cuota diaria de descargas.\n\n\(detail)\n\nAñade tu usuario y contraseña de OpenSubtitles en Ajustes para ampliarla, o pulsa «Reintentar fallidos» cuando se renueve."
+                    notice = LF("notice.quota", detail)
                     break
                 }
             }
@@ -93,9 +93,9 @@ final class Library {
             if overwrite || !FileManager.default.fileExists(atPath: kind.outputURL(for: url).path) { needHash = true }
         }
         if needHash {
-            for kind in SubKind.allCases where item[kind] == .pending { item[kind] = .working("Calculando hash…") }
+            for kind in SubKind.allCases where item[kind] == .pending { item[kind] = .working(L("state.hash")) }
             hash = await Task.detached { MovieHash.compute(url) }.value
-            for kind in SubKind.allCases where item[kind] == .working("Calculando hash…") { item[kind] = .working("Resolviendo IMDB…") }
+            for kind in SubKind.allCases where item[kind] == .working(L("state.hash")) { item[kind] = .working(L("state.imdb")) }
             await resolveIMDB(&info, item: item)
         }
 
@@ -103,10 +103,10 @@ final class Library {
             if Task.isCancelled { item[kind] = .pending; continue }
             let target = kind.outputURL(for: url)
             if !overwrite, FileManager.default.fileExists(atPath: target.path) {
-                item[kind] = .skipped("Ya existe")
+                item[kind] = .skipped(L("state.exists"))
                 continue
             }
-            item[kind] = .working("Buscando…")
+            item[kind] = .working(L("state.searching"))
             item[kind] = await fetch(kind, item: item, target: target, info: info, fileName: fileName,
                                      hash: hash, providers: providers)
         }
@@ -116,10 +116,10 @@ final class Library {
     private func resolveIMDB(_ info: inout MediaInfo, item: VideoItem) async {
         if let id = item.imdbOverride {
             info.imdbID = id
-            item.imdbLabel = "\(IMDB.format(id)) (manual)"
+            item.imdbLabel = "\(IMDB.format(id)) \(L("imdb.manual"))"
         } else if let id = IMDB.explicitID(for: item.url, isEpisode: info.isEpisode) {
             info.imdbID = id
-            item.imdbLabel = "\(IMDB.format(id)) (del nombre/.nfo)"
+            item.imdbLabel = "\(IMDB.format(id)) \(L("imdb.explicit"))"
         } else if let m = await IMDBResolver.shared.resolve(info) {
             info.imdbID = m.id
             item.imdbLabel = "\(m.title) · \(IMDB.format(m.id))"
@@ -131,7 +131,7 @@ final class Library {
     /// Fija a mano el id de IMDB (el de la serie en episodios) y repite la búsqueda.
     func setIMDB(_ item: VideoItem, text: String) {
         guard let id = IMDB.parseID(text) else {
-            notice = "No reconozco ese id de IMDB. Usa algo como tt0804484."
+            notice = L("notice.badimdb")
             return
         }
         item.imdbOverride = id
@@ -146,13 +146,13 @@ final class Library {
         var errors: [String] = []
         for p in providers where exhausted[p.name] == nil {
             if Task.isCancelled { return .pending }
-            item[kind] = .working("Buscando en \(p.name)…")
+            item[kind] = .working(LF("state.searching.in", p.name))
             do {
                 var cands = try await p.search(info: info, fileName: fileName, hash: hash, kind: kind)
                 for i in cands.indices { cands[i].score = Scoring.score(cands[i], fileName: fileName, kind: kind) }
                 cands.sort { $0.score > $1.score }
                 for c in cands.prefix(3) {
-                    item[kind] = .working("Descargando de \(p.name)…")
+                    item[kind] = .working(LF("state.downloading", p.name))
                     do {
                         let data = try await p.download(c, info: info, fileName: fileName, kind: kind)
                         guard let text = SubtitleText.decode(data), SubtitleText.looksLikeSRT(text) else { continue }
