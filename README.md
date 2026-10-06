@@ -41,6 +41,10 @@ También puedes mover `build/SubtitleFind.app` a `/Aplicaciones` a mano. La prim
 
 Para regenerar el icono: `swift tools/make_icon.swift`.
 
+## Idiomas
+
+La interfaz está en **español** e **inglés** y sigue el idioma del sistema. Las traducciones están en `Resources/es.lproj` y `Resources/en.lproj` (`Localizable.strings`); para añadir otro idioma, crea su carpeta `.lproj`, añádelo a `CFBundleLocalizations` en `Info.plist` y a `build.sh`.
+
 ## Primeros pasos
 
 1. Abre la app y ve a **Ajustes** (⌘,).
@@ -98,5 +102,11 @@ Miguel Gonzalez Oreiro
 - GitHub: [github.com/mgoreiro](https://github.com/mgoreiro)
 
 Los datos que muestra *Acerca de* están en [Author.swift](Sources/SubtitleFind/Author.swift).
+
+## Licencia
+
+[MIT](LICENSE) © 2026 Miguel Gonzalez Oreiro. Puedes usar, modificar y distribuir la app libremente conservando el aviso de copyright. Se ofrece sin garantía.
+
+La app solo usa las APIs públicas de OpenSubtitles, SubDL e IMDB; respeta sus condiciones de uso. Los subtítulos descargados pertenecen a sus autores.
 
 Más detalle técnico en [docs/arquitectura.md](docs/arquitectura.md).

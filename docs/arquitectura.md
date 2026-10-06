@@ -11,6 +11,7 @@ Sources/SubtitleFind/
 ├── Scanning.swift   Escaneo de carpetas, hash de OpenSubtitles, parser de nombres, puntuación, decodificación
 ├── IMDB.swift       Ids explícitos (carpeta/.nfo) y resolución título → id
 ├── Providers.swift  OpenSubtitlesProvider, SubDLProvider, HTTP con reintentos, descompresión de zips
+├── Localization.swift  L() y LF(): textos según el idioma del sistema
 └── Author.swift     Datos del autor y panel "Acerca de"
 ```
 
@@ -35,6 +36,10 @@ El procesado es **secuencial** a propósito, para respetar los límites de petic
 - Forzado → `<vídeo sin extensión>.srt`
 - Normal → `<vídeo sin extensión>_es.srt`
 
+## Idiomas
+
+Todos los textos visibles usan `L("clave")` / `LF("clave", args…)`, que leen `Resources/<idioma>.lproj/Localizable.strings`. Las claves deben existir en todos los idiomas y llevar los mismos marcadores (`%@`, `%d`). `build.sh` copia las carpetas `.lproj` al paquete.
+
 ## Icono
 
 `tools/make_icon.swift` dibuja el icono con AppKit y genera `Resources/AppIcon.icns` y `docs/icon.png`. Se ejecuta a mano; `build.sh` solo copia el `.icns`.
@@ -44,4 +49,5 @@ El procesado es **secuencial** a propósito, para respetar los límites de petic
 - Guardar claves en el Llavero (con firma de desarrollador, para evitar avisos tras cada recompilación).
 - Más fuentes, como Podnapisi o Subdivx, que requerirían extraer datos de sus webs.
 - Detección de forzados por contenido (pocas líneas, solo diálogos en otro idioma).
+- Más idiomas de interfaz.
 - Tests automáticos del parser de nombres y de la puntuación.

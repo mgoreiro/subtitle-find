@@ -32,17 +32,17 @@ struct ContentView: View {
         .toolbar {
             ToolbarItem { SettingsLink { Image(systemName: "gearshape") } }
         }
-        .alert("Subtitle Find", isPresented: Binding(get: { lib.notice != nil }, set: { if !$0 { lib.notice = nil } })) {
-            Button("OK") {}
+        .alert(L("app.name"), isPresented: Binding(get: { lib.notice != nil }, set: { if !$0 { lib.notice = nil } })) {
+            Button(L("ok")) {}
         } message: { Text(lib.notice ?? "") }
     }
 
     private var keyBanner: some View {
         HStack {
             Image(systemName: "key.fill")
-            Text("Configura una API key de OpenSubtitles o SubDL en Ajustes (⌘,) para poder buscar.")
+            Text(L("ui.banner"))
             Spacer()
-            SettingsLink { Text("Abrir ajustes") }
+            SettingsLink { Text(L("ui.openSettings")) }
         }
         .font(.callout)
         .padding(10)
@@ -54,8 +54,8 @@ struct ContentView: View {
             Image(systemName: "captions.bubble")
                 .font(.system(size: 54))
                 .foregroundStyle(targeted ? Color.accentColor : .secondary)
-            Text("Arrastra aquí vídeos o carpetas").font(.title2)
-            Text("Buscaré subtítulos en castellano (normales y forzados) y los guardaré junto a cada vídeo.")
+            Text(L("ui.drop.title")).font(.title2)
+            Text(L("ui.drop.desc"))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -72,15 +72,15 @@ struct ContentView: View {
     private var footer: some View {
         HStack {
             if lib.isRunning { ProgressView().controlSize(.small) }
-            Text("\(lib.doneCount) de \(lib.items.count) vídeos")
+            Text(LF("ui.progress", lib.doneCount, lib.items.count))
                 .foregroundStyle(.secondary)
             Spacer()
             if lib.isRunning {
-                Button("Cancelar") { lib.cancel() }
+                Button(L("common.cancel")) { lib.cancel() }
             } else {
-                Button("Reintentar fallidos") { lib.retryFailed() }
+                Button(L("ui.retry")) { lib.retryFailed() }
             }
-            Button("Vaciar lista") { lib.clear() }
+            Button(L("ui.clear")) { lib.clear() }
         }
         .padding(10)
     }
@@ -98,7 +98,7 @@ struct RowView: View {
             Text(item.url.deletingLastPathComponent().path)
                 .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
             if let l = item.imdbLabel {
-                Text("IMDB: \(l)").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text(LF("ui.imdb.line", l)).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             HStack(spacing: 16) {
                 StateBadge(kind: .normal, state: item.normal)
@@ -108,15 +108,15 @@ struct RowView: View {
         }
         .padding(.vertical, 3)
         .contextMenu {
-            Button("Fijar id de IMDB…") { idText = item.imdbOverride.map(IMDB.format) ?? ""; askID = true }
-            Button("Mostrar en el Finder") { NSWorkspace.shared.activateFileViewerSelecting([item.url]) }
+            Button(L("ctx.setimdb")) { idText = item.imdbOverride.map(IMDB.format) ?? ""; askID = true }
+            Button(L("ctx.reveal")) { NSWorkspace.shared.activateFileViewerSelecting([item.url]) }
         }
-        .alert("Id de IMDB", isPresented: $askID) {
+        .alert(L("alert.imdb.title"), isPresented: $askID) {
             TextField("tt0804484", text: $idText)
-            Button("Buscar") { lib.setIMDB(item, text: idText) }
-            Button("Cancelar", role: .cancel) {}
+            Button(L("alert.imdb.search")) { lib.setIMDB(item, text: idText) }
+            Button(L("common.cancel"), role: .cancel) {}
         } message: {
-            Text("Para series, el id de la serie (no el del episodio). También vale la URL de IMDB.")
+            Text(L("alert.imdb.msg"))
         }
     }
 }
@@ -135,13 +135,13 @@ struct StateBadge: View {
 
     private var text: String {
         switch state {
-        case .pending: return "en cola"
+        case .pending: return L("state.queued")
         case .working(let s): return s
-        case .saved(let p): return "guardado (\(p))"
+        case .saved(let p): return LF("state.saved", p)
         case .skipped(let s): return s
-        case .notFound: return "no encontrado"
-        case .failed: return "error"
-        case .quota: return "cuota agotada"
+        case .notFound: return L("state.notfound")
+        case .failed: return L("state.error")
+        case .quota: return L("state.quota")
         }
     }
 
@@ -183,20 +183,20 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("OpenSubtitles.com (recomendado: marca los forzados y busca por hash)") {
-                TextField("API key", text: $osKey)
-                TextField("Usuario (opcional)", text: $osUser)
-                SecureField("Contraseña (opcional)", text: $osPass)
-                Link("Crear API key", destination: URL(string: "https://www.opensubtitles.com/consumers")!)
-                Text("Sin usuario y contraseña, OpenSubtitles solo permite 5 descargas cada 24 h. Con tu cuenta la cuota es mayor.")
+            Section(L("settings.os.title")) {
+                TextField(L("settings.apikey"), text: $osKey)
+                TextField(L("settings.user"), text: $osUser)
+                SecureField(L("settings.pass"), text: $osPass)
+                Link(L("settings.createkey"), destination: URL(string: "https://www.opensubtitles.com/consumers")!)
+                Text(L("settings.os.note"))
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("SubDL (alternativa)") {
-                TextField("API key", text: $subdlKey)
-                Link("Crear API key", destination: URL(string: "https://subdl.com/panel/api")!)
+            Section(L("settings.subdl.title")) {
+                TextField(L("settings.apikey"), text: $subdlKey)
+                Link(L("settings.createkey"), destination: URL(string: "https://subdl.com/panel/api")!)
             }
             Section {
-                Toggle("Sobrescribir subtítulos existentes", isOn: $overwrite)
+                Toggle(L("settings.overwrite"), isOn: $overwrite)
             }
         }
         .formStyle(.grouped)

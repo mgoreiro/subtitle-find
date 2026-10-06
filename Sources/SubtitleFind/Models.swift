@@ -4,7 +4,7 @@ import Observation
 enum SubKind: CaseIterable {
     case normal, forced
 
-    var label: String { self == .normal ? "Normal" : "Forzado" }
+    var label: String { self == .normal ? L("kind.normal") : L("kind.forced") }
 
     /// Forzado: mismo nombre que el vídeo (`Peli.srt`). Normal: `Peli_es.srt`.
     func outputURL(for video: URL) -> URL {
@@ -92,8 +92,8 @@ enum ProviderError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .http(let c, let m): return "HTTP \(c): \(m)"
-        case .quota(let m): return "Cuota de descargas agotada (\(m))"
+        case .http(let c, let m): return LF("err.http", c, m)
+        case .quota(let m): return LF("err.quota", m)
         case .bad(let m): return m
         }
     }

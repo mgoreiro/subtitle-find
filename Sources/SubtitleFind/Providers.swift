@@ -12,7 +12,7 @@ enum HTTP {
         var attempt = 0
         while true {
             let (data, resp) = try await session.data(for: req)
-            guard let http = resp as? HTTPURLResponse else { throw ProviderError.bad("Sin respuesta del servidor") }
+            guard let http = resp as? HTTPURLResponse else { throw ProviderError.bad(L("err.noresponse")) }
             if http.statusCode == 429, attempt < retries {
                 let wait = Double(http.value(forHTTPHeaderField: "Retry-After") ?? "") ?? Double(2 << attempt)
                 try await Task.sleep(for: .seconds(min(wait, 30)))
@@ -59,7 +59,7 @@ final class OpenSubtitlesProvider: SubtitleProvider, @unchecked Sendable {
         let (data, http) = try await HTTP.send(r)
         let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
         guard (200..<300).contains(http.statusCode) else {
-            let msg = (obj["message"] as? String) ?? "respuesta inesperada"
+            let msg = (obj["message"] as? String) ?? L("err.unexpected")
             if http.statusCode == 406 { throw ProviderError.quota(msg) }
             throw ProviderError.http(http.statusCode, msg)
         }
@@ -78,7 +78,7 @@ final class OpenSubtitlesProvider: SubtitleProvider, @unchecked Sendable {
                 }
             }
         } catch {
-            loginNote = "el inicio de sesión con tu usuario falló (\(error.localizedDescription))"
+            loginNote = LF("err.login", error.localizedDescription)
         }
     }
 
@@ -154,10 +154,10 @@ final class OpenSubtitlesProvider: SubtitleProvider, @unchecked Sendable {
             throw ProviderError.quota(m + (loginNote.map { " · " + $0 } ?? ""))
         }
         guard let link = obj["link"] as? String, let url = URL(string: link) else {
-            throw ProviderError.bad("OpenSubtitles no devolvió enlace de descarga")
+            throw ProviderError.bad(L("err.nolink"))
         }
         let (data, http) = try await HTTP.send(URLRequest(url: url))
-        guard http.statusCode == 200 else { throw ProviderError.http(http.statusCode, "descarga fallida") }
+        guard http.statusCode == 200 else { throw ProviderError.http(http.statusCode, L("err.download")) }
         return data
     }
 }
@@ -190,7 +190,7 @@ final class SubDLProvider: SubtitleProvider, @unchecked Sendable {
             let (data, http) = try await HTTP.send(URLRequest(url: c.url!))
             let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
             guard http.statusCode == 200 else {
-                throw ProviderError.http(http.statusCode, (obj["error"] as? String) ?? "respuesta inesperada")
+                throw ProviderError.http(http.statusCode, (obj["error"] as? String) ?? L("err.unexpected"))
             }
             return obj
         }
@@ -216,9 +216,9 @@ final class SubDLProvider: SubtitleProvider, @unchecked Sendable {
     }
 
     func download(_ c: SubtitleCandidate, info: MediaInfo, fileName: String, kind: SubKind) async throws -> Data {
-        guard let url = URL(string: "https://dl.subdl.com" + c.ref) else { throw ProviderError.bad("URL de SubDL inválida") }
+        guard let url = URL(string: "https://dl.subdl.com" + c.ref) else { throw ProviderError.bad(L("err.subdlurl")) }
         let (data, http) = try await HTTP.send(URLRequest(url: url))
-        guard http.statusCode == 200 else { throw ProviderError.http(http.statusCode, "descarga fallida") }
+        guard http.statusCode == 200 else { throw ProviderError.http(http.statusCode, L("err.download")) }
         guard data.starts(with: [0x50, 0x4B]) else { return data } // no es zip: ya es el .srt
         let files = try ZipExtractor.srtFiles(in: data)
         var pool = files
@@ -232,7 +232,7 @@ final class SubDLProvider: SubtitleProvider, @unchecked Sendable {
         let byKind = pool.filter { isForcedName($0.name) == (kind == .forced) }
         if !byKind.isEmpty { pool = byKind }
         guard let best = pool.max(by: { Scoring.similarity($0.name, fileName) < Scoring.similarity($1.name, fileName) }) else {
-            throw ProviderError.bad("El zip no contiene .srt")
+            throw ProviderError.bad(L("err.nosrt"))
         }
         return best.data
     }

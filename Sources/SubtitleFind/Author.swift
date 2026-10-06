@@ -1,9 +1,6 @@
 import AppKit
 
 /// Datos del autor que se muestran en "Acerca de". Edítalos aquí.
-/// Texto localizado según el idioma del sistema (Resources/*.lproj).
-func L(_ key: String) -> String { NSLocalizedString(key, comment: "") }
-
 enum Author {
     static let name = "Miguel Gonzalez Oreiro"
     static let email = "mgoreiro@gmail.com"
